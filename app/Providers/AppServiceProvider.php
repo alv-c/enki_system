@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,7 +22,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         VerifyEmail::createUrlUsing(function ($notifiable) {
-            return url('/verify-email/' . $notifiable->getKey() . '/' . sha1($notifiable->getEmailForVerification()));
+            return URL::temporarySignedRoute(
+                'verification.verify',
+                now()->addMinutes(120), // Expiração do link (120 minutos)
+                ['id' => $notifiable->getKey(), 'hash' => sha1($notifiable->getEmailForVerification())]
+            );
         });
     }
 }

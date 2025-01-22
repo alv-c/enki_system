@@ -8,6 +8,6 @@ class AuthController extends Controller
 {
     public function index()
     {
-        return view('sistema');
+        return view('dashboard');
     }
 }
