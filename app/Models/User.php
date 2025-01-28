@@ -9,6 +9,8 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
+    protected $table = 'users';
+
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
@@ -50,5 +52,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function is_admin()
     {
         return $this->is_admin; // Retorna true se o usuário for administrador
+    }
+
+    public function rifas()
+    {
+        return $this->hasMany(Rifa::class);
     }
 }

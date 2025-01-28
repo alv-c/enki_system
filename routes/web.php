@@ -4,19 +4,29 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UserApprovalController;
+use App\Http\Controllers\CampanhaController;
+use App\Http\Controllers\CampanhaPlanoPromocaoController;
+use App\Http\Controllers\RifaController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+Route::middleware(['auth'])->prefix('sistema')->group(function () {
+    Route::resource('campanhas', CampanhaController::class);
+    Route::resource('campanhas.planos', CampanhaPlanoPromocaoController::class)->shallow();
+    Route::resource('campanhas.rifas', RifaController::class)->shallow();
 });
 
 Route::get('/sistema', [AuthController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
