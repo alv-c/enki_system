@@ -42,7 +42,7 @@ class AuthenticatedSessionController extends Controller
             }
 
             $request->session()->regenerate();
-            return redirect()->intended('/dashboard'); // Ou outra rota após login
+            return redirect()->intended('/sistema'); // Ou outra rota após login
         }
 
         throw ValidationException::withMessages([
