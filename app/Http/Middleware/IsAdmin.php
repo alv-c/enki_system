@@ -18,8 +18,7 @@ class IsAdmin
     {
         // Verifica se o usuário está autenticado e se o papel é admin
         if (!Auth::check() || Auth::user()->role !== 'admin') {
-            // Redireciona para a página inicial ou de login
-            return redirect('/')->with('error', 'Acesso negado. Você não tem permissão para acessar esta área.');
+            abort(403);
         }
 
         return $next($request);
