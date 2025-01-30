@@ -32,17 +32,19 @@ class AuthenticatedSessionController extends Controller
 
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
-
-            // Verificar se o usuário foi aprovado
-            if (!$user->is_approved) {
+            // Verificar se o usuário 'admin' foi aprovado
+            if ($user->role == 'admin' && !$user->is_approved) {
                 Auth::logout();
                 return redirect()->route('login')->withErrors([
                     'email' => 'Sua conta ainda não foi aprovada. Aguarde aprovação pelo administrador.',
                 ]);
+            } else if ($user->role == 'admin' && $user->is_approved) {
+                $request->session()->regenerate();
+                return redirect()->intended('/sistema');
+            } else if ($user->role == 'comprador') {
+                $request->session()->regenerate();
+                return redirect()->intended('/');
             }
-
-            $request->session()->regenerate();
-            return redirect()->intended('/sistema'); // Ou outra rota após login
         }
 
         throw ValidationException::withMessages([

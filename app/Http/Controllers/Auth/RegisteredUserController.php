@@ -35,14 +35,18 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
+        $role = $request->has('role') && $request->role === 'admin' ? 'admin' : 'comprador';
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'is_approved' => false,
+            'role' => $role, // Definindo o papel do usuário
         ]);
 
         event(new Registered($user));
-        return redirect()->route('login')->with('success', 'Cadastro realizado com sucesso! Aguarde a aprovação.');
+        $mensagem = $role == 'admin' ? 'Cadastro realizado com sucesso! Aguarde a aprovação.' : 'Cadastro realizado com sucesso! Confirme o cadastro em seu e-mail para continuar.';
+        return redirect()->route('login')->with('success', $mensagem);
     }
 }
