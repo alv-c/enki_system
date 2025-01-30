@@ -25,18 +25,20 @@ Route::get('/', function () {
  * ROTAS PARA ADMS NIVEL 1
  */
 Route::get('/sistema', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified', 'admin_role'])
+    ->middleware(['verified', 'auth', 'admin_role'])
     ->name('dashboard');
 
-Route::middleware(['auth', 'admin_role', 'verified'])->prefix('sistema')->group(function () {
+Route::middleware(['verified', 'auth', 'admin_role'])->prefix('sistema')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Route::get('campanhas', [CampanhaController::class, 'index'])->name('campanhas');
     Route::resource('campanhas', CampanhaController::class);
-    Route::resource('campanhas.planos', CampanhaPlanoPromocaoController::class)->shallow();
+    Route::resource('campanhas.planos', CampanhaPlanoPromocaoController::class)->shallow(); //Clique para gerenciar planos de uma campanha
+    Route::resource('campanhas.rifas', RifaController::class)->shallow();
 });
 
 /**
@@ -47,7 +49,7 @@ Route::middleware(['auth', 'admin_role', 'verified'])->prefix('sistema')->group(
 //     ->middleware(['auth', 'verified', 'MIDDLEWARE PARA COMPRADOR'])
 //     ->name('dashboard');
 
-Route::middleware(['auth', 'admin', 'admin_role', 'verified'])->group(function () {
+Route::middleware(['verified', 'auth', 'admin_role', 'admin'])->group(function () {
     Route::get('/admin/aprovacao-usuarios', [UserApprovalController::class, 'index'])->name('admin.user-approvals.index');
     Route::post('/admin/aprovacao-usuarios/{id}/approve', [UserApprovalController::class, 'approve'])->name('admin.user-approvals.approve');
 });

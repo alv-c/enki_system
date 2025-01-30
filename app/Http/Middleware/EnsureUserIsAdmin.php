@@ -16,9 +16,9 @@ class EnsureUserIsAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && Auth::user()->is_admin) {
+        if (Auth::check() && Auth::user()->role === 'admin' && Auth::user()->is_admin) {
             return $next($request);
         }
-        abort(403, 'Você não tem permissão para acessar esta página.');
+        return redirect('/')->with('error', 'Acesso negado. Você não tem permissão para acessar esta área.');
     }
 }
