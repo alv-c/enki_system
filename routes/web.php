@@ -8,6 +8,7 @@ use App\Http\Controllers\CampanhaController;
 use App\Http\Controllers\CampanhaPlanoPromocaoController;
 use App\Http\Controllers\RifaController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Comprador\DashboardCompradorController;
 
 /**
  * ROTAS PARA COMPRADORES
@@ -20,6 +21,9 @@ Route::get('/', function () {
 // Route::get('/sistema', [DashboardController::class, 'index'])
 //     ->middleware(['auth', 'verified', 'MIDDLEWARE PARA COMPRADOR'])
 //     ->name('dashboard');
+Route::middleware(['auth', 'verified', 'comprador'])->prefix('comprador')->group(function () {
+    Route::get('/dashboard', [DashboardCompradorController::class, 'index'])->name('comprador.dashboard');
+});
 
 /**
  * ROTAS PARA ADMS NIVEL 1
