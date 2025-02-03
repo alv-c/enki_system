@@ -8,8 +8,12 @@
 
     <h2>Promoções</h2>
     <ul>
-        @foreach ($campanha->planosPromocao as $promo)
-            <li>{{ $promo->num_rifas }} Rifas - R$ {{ number_format($promo->valor_plano, 2, ',', '.') }}</li>
-        @endforeach
+        @if (!empty($campanha->planosPromocao) && $campanha->planosPromocao->count() > 0)
+            @foreach ($campanha->planosPromocao as $promo)
+                <li>{{ $promo->num_rifas }} Rifas - R$ {{ number_format($promo->valor_plano, 2, ',', '.') }}</li>
+            @endforeach
+        @else
+            <li>Nenhuma promoção cadastrada para esta campanha.</li>
+        @endif
     </ul>
 </x-app-layout>

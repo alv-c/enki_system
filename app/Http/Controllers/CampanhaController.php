@@ -36,15 +36,15 @@ class CampanhaController extends Controller
             'status' => 'required|in:ativo,inativo,finalizado,pendente',
             'galeria.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'valor_cota' => 'required|numeric|min:0',
-            'num_cotas_disponiveis' => 'required|integer|min:0',
+            'num_cotas_disponiveis' => 'required|integer|min:1',
         ]);
+
         // Upload de imagens (se necessário)
         if ($request->hasFile('galeria')) {
-            $validated['galeria'] = array_map(function ($image) {
-                return $image->store('galerias', 'public');
-            }, $request->file('galeria'));
+            $validated['galeria'] = array_map(fn($image) => $image->store('galerias', 'public'), $request->file('galeria'));
         }
         $validated['galeria'] = json_encode($validated['galeria'] ?? []);
+        // Criar campanha (rifas serão geradas automaticamente)
         Campanha::create($validated);
         return redirect()->route('campanhas.index')->with('success', 'Campanha criada com sucesso!');
     }
@@ -54,6 +54,9 @@ class CampanhaController extends Controller
      */
     public function show(Campanha $campanha)
     {
+        $campanha->load('planosPromocao', 'rifas');
+        // Debug temporário
+        // dd($campanha->rifas);
         return view('campanhas.show', compact('campanha'));
     }
 

@@ -43,7 +43,7 @@ class AuthenticatedSessionController extends Controller
                 return redirect()->intended('/sistema');
             } else if ($user->role == 'comprador') {
                 $request->session()->regenerate();
-                return redirect()->intended('/');
+                return redirect()->intended('/comprador/campanhas');
             }
         }
 
