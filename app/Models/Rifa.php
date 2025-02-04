@@ -16,6 +16,7 @@ class Rifa extends Model
         'numero',
         'id_comprador',
         'status',
+        'pedido_id',
     ];
 
     public function campanha()
@@ -26,5 +27,10 @@ class Rifa extends Model
     public function comprador()
     {
         return $this->belongsTo(User::class, 'id_comprador');
+    }
+
+    public function pedido()
+    {
+        return $this->belongsTo(Pedido::class);
     }
 }
