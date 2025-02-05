@@ -10,7 +10,7 @@ use App\Http\Controllers\RifaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Comprador\RifaCompraController;
 use App\Http\Controllers\PedidoController;
-use App\Http\Controllers\CheckoutController; // Ensure this class exists in the specified namespace
+use App\Http\Controllers\CheckoutController;
 
 /**
  * ROTAS PARA COMPRADORES
@@ -18,11 +18,6 @@ use App\Http\Controllers\CheckoutController; // Ensure this class exists in the 
 Route::get('/', function () {
     return view('welcome');
 });
-
-//criar outra rota para comprador com get'/', porém com middleware de autenticação para o comprador
-// Route::get('/sistema', [DashboardController::class, 'index'])
-//     ->middleware(['auth', 'verified', 'MIDDLEWARE PARA COMPRADOR'])
-//     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'comprador'])->prefix('comprador')->group(function () {
     // Campanhas e Rifas
@@ -33,6 +28,8 @@ Route::middleware(['auth', 'verified', 'comprador'])->prefix('comprador')->group
     Route::get('/carrinho', [CheckoutController::class, 'index'])->name('comprador.carrinho');
     Route::post('/carrinho/adicionar/{rifa}', [CheckoutController::class, 'adicionarAoCarrinho'])->name('comprador.carrinho.adicionar');
     Route::delete('/carrinho/remover/{id}', [CheckoutController::class, 'removerDoCarrinho'])->name('comprador.carrinho.remover');
+    Route::post('/carrinho/adicionar-multiplas', [CheckoutController::class, 'adicionarMultiplasAoCarrinho'])
+        ->name('comprador.carrinho.adicionar.multiplas');
     Route::post('/checkout', [CheckoutController::class, 'finalizarCompra'])->name('comprador.checkout.processar');
 
     // Pedidos
@@ -62,10 +59,8 @@ Route::middleware(['verified', 'auth', 'admin_role'])->prefix('sistema')->group(
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Route::get('campanhas', [CampanhaController::class, 'index'])->name('campanhas');
     Route::resource('campanhas', CampanhaController::class);
     Route::resource('campanhas.planos', CampanhaPlanoPromocaoController::class)->shallow(); //Clique para gerenciar planos de uma campanha
-    // Route::resource('campanhas.rifas', RifaController::class)->shallow();
     Route::get('/campanhas/{campanha}/rifas', [RifaController::class, 'index'])->name('campanhas.rifas.index');
 });
 

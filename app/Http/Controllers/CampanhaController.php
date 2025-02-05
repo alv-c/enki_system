@@ -55,8 +55,6 @@ class CampanhaController extends Controller
     public function show(Campanha $campanha)
     {
         $campanha->load('planosPromocao', 'rifas');
-        // Debug temporário
-        // dd($campanha->rifas);
         return view('campanhas.show', compact('campanha'));
     }
 

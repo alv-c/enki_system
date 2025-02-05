@@ -19,7 +19,7 @@ class CheckoutController extends Controller
         return view('comprador.carrinho', compact('carrinho'));
     }
 
-    // Adiciona uma rifa ao carrinho
+    // Adiciona rifa ao carrinho de 1 em 1
     public function adicionarAoCarrinho(Request $request, Rifa $rifa)
     {
         $carrinho = Session::get('carrinho', []);
@@ -42,13 +42,53 @@ class CheckoutController extends Controller
         return back()->with('success', 'Rifa adicionada ao carrinho!');
     }
 
+    // Adiciona rifa ao carrinho em massa
+    public function adicionarMultiplasAoCarrinho(Request $request)
+    {
+        $request->validate([
+            'campanha_id' => 'required|exists:campanhas,id',
+            'quantidade' => 'required|integer|min:1',
+        ]);
+
+        $campanhaId = $request->campanha_id;
+        $quantidade = $request->quantidade;
+
+        // Buscar rifas disponíveis da campanha, de forma aleatória
+        $rifasDisponiveis = Rifa::where('id_campanha', $campanhaId)
+            ->where('status', 'disponivel')
+            ->inRandomOrder()
+            ->limit($quantidade)
+            ->get();
+
+        // Verifica se há rifas disponíveis suficientes
+        if ($rifasDisponiveis->count() < $quantidade) {
+            return back()->with('error', 'Quantidade de rifas disponíveis insuficiente.');
+        }
+
+        // Recuperar o carrinho da sessão
+        $carrinho = Session::get('carrinho', []);
+
+        // Adicionar rifas ao carrinho
+        foreach ($rifasDisponiveis as $rifa) {
+            if (!isset($carrinho[$rifa->id])) {
+                $carrinho[$rifa->id] = [
+                    'numero' => $rifa->numero,
+                    'valor' => $rifa->campanha->valor_cota,
+                ];
+            }
+        }
+
+        // Atualizar o carrinho na sessão
+        Session::put('carrinho', $carrinho);
+        return back()->with('success', "$quantidade rifas adicionadas ao carrinho!");
+    }
+
     // Remove uma rifa do carrinho
     public function removerDoCarrinho($id)
     {
         $carrinho = Session::get('carrinho', []);
         unset($carrinho[$id]);
         Session::put('carrinho', $carrinho);
-
         return back()->with('success', 'Rifa removida do carrinho.');
     }
 
@@ -57,18 +97,14 @@ class CheckoutController extends Controller
     {
         $user = Auth::user();
         $carrinho = Session::get('carrinho', []);
-
         if (empty($carrinho)) {
             return redirect()->route('comprador.carrinho')->with('error', 'Seu carrinho está vazio.');
         }
-
         DB::beginTransaction();
-
         try {
             // Pega o primeiro item do carrinho
             $primeiraRifaId = array_key_first($carrinho);
             $primeiraRifa = Rifa::with('campanha')->find($primeiraRifaId);
-
             if (!$primeiraRifa || !$primeiraRifa->campanha) {
                 return redirect()->route('comprador.carrinho')->with('error', 'Erro ao processar a compra: Rifa ou Campanha não encontrada.');
             }
@@ -117,60 +153,6 @@ class CheckoutController extends Controller
             return redirect()->route('comprador.carrinho')->with('error', 'Erro ao processar o pedido.');
         }
     }
-
-    //ANTIGO
-    // public function finalizarCompra(Request $request)
-    // {
-    //     $user = Auth::user();
-    //     $carrinho = Session::get('carrinho', []);
-
-    //     if (empty($carrinho)) {
-    //         return redirect()->route('comprador.carrinho')->with('error', 'Seu carrinho está vazio.');
-    //     }
-
-    //     DB::beginTransaction();
-
-    //     try {
-    //         // Pega o primeiro item do carrinho
-    //         $primeiraRifaId = array_key_first($carrinho);
-    //         $primeiraRifa = Rifa::with('campanha')->find($primeiraRifaId);
-
-
-    //         if (!$primeiraRifa) {
-    //             return redirect()->route('comprador.carrinho')->with('error', 'Erro ao processar a compra: Rifa não encontrada.');
-    //         }
-
-    //         if (!$primeiraRifa->campanha) {
-    //             return redirect()->route('comprador.carrinho')->with('error', 'Erro ao processar a compra: Campanha não encontrada.');
-    //         }
-
-    //         // Cria o pedido associando à campanha da rifa
-    //         $pedido = Pedido::create([
-    //             'user_id' => $user->id,
-    //             'campanha_id' => $primeiraRifa->campanha->id, // Agora garantido que não será null
-    //             'status' => 'pendente',
-    //         ]);
-
-
-    //         // Atualiza as rifas como "reservadas" e vincula ao pedido
-    //         Rifa::whereIn('id', array_keys($carrinho))->update([
-    //             'id_comprador' => $user->id,
-    //             'status' => 'reservada',
-    //             'pedido_id' => $pedido->id
-    //         ]);
-
-    //         // Limpa o carrinho após a compra
-    //         Session::forget('carrinho');
-
-    //         DB::commit();
-
-    //         return redirect()->route('comprador.meus-pedidos')->with('success', 'Pedido realizado com sucesso! Aguarde o pagamento.');
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-    //         Log::error('Erro ao finalizar compra: ' . $e->getMessage());
-    //         return redirect()->route('comprador.carrinho')->with('error', 'Erro ao processar o pedido.');
-    //     }
-    // }
 
     public function calcularValorTotal(array $carrinho)
     {

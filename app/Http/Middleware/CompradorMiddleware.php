@@ -19,7 +19,6 @@ class CompradorMiddleware
         if (Auth::check() && Auth::user()->role === 'comprador') {
             return $next($request);
         }
-
         abort(403, 'Acesso negado.');
     }
 }

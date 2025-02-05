@@ -11,7 +11,6 @@ class PedidoController extends Controller
     public function index()
     {
         $pedidos = Pedido::where('user_id', Auth::id())->with(['campanha', 'rifas'])->get();
-
         return view('comprador.meus-pedidos', compact('pedidos'));
     }
 }
