@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class CheckoutController extends Controller
 {
@@ -83,7 +84,6 @@ class CheckoutController extends Controller
         return back()->with('success', "$quantidade rifas adicionadas ao carrinho!");
     }
 
-    // Remove uma rifa do carrinho
     public function removerDoCarrinho($id)
     {
         $carrinho = Session::get('carrinho', []);
@@ -97,56 +97,82 @@ class CheckoutController extends Controller
     {
         $user = Auth::user();
         $carrinho = Session::get('carrinho', []);
+
         if (empty($carrinho)) {
             return redirect()->route('comprador.carrinho')->with('error', 'Seu carrinho está vazio.');
         }
+
+        $request->validate([
+            'cpf' => 'required|string|max:14',
+            'telefone' => 'required|string|max:15',
+        ]);
+
         DB::beginTransaction();
         try {
             // Pega o primeiro item do carrinho
             $primeiraRifaId = array_key_first($carrinho);
             $primeiraRifa = Rifa::with('campanha')->find($primeiraRifaId);
+
             if (!$primeiraRifa || !$primeiraRifa->campanha) {
+                DB::rollBack();
                 return redirect()->route('comprador.carrinho')->with('error', 'Erro ao processar a compra: Rifa ou Campanha não encontrada.');
             }
 
-            // Cria o pedido
+            $valorTotal = $primeiraRifa->campanha->valor_cota * count($carrinho);
             $pedido = Pedido::create([
                 'user_id' => $user->id,
                 'campanha_id' => $primeiraRifa->campanha->id,
                 'status' => 'pendente',
-                'valor_a_pagar' => $this->calcularValorTotal($carrinho), // Método para calcular o valor total
+                'valor_a_pagar' => $valorTotal
             ]);
 
-            // Atualiza as rifas como "reservadas" e vincula ao pedido
+            if (!$pedido) {
+                DB::rollBack();
+                return redirect()->route('comprador.carrinho')->with('error', 'Erro ao criar o pedido.');
+            }
+
             Rifa::whereIn('id', array_keys($carrinho))->update([
                 'id_comprador' => $user->id,
                 'status' => 'reservada',
                 'pedido_id' => $pedido->id,
             ]);
+            DB::commit();
 
-            /**
-             * ================ INTEGRAR COM API DE PAGAMENTO ================
-             */
-            // Chama o serviço de pagamento (Exemplo com PayPal ou Stripe)
-            $resultadoPagamento = $this->processarPagamento($pedido, $request); // Método que integra com a API de pagamento
+            $resultadoPagamento = $this->processarPagamento($pedido, $request->cpf, $request->telefone);
 
-            if ($resultadoPagamento['status'] == 'sucesso') {
-                // Atualiza o status do pedido e o valor pago
-                $pedido->update([
-                    'status' => 'pago',
-                    'valor_pago' => $resultadoPagamento['valor_pago'], // Valor pago recebido da API
-                ]);
-
-                // Limpa o carrinho após a compra
-                Session::forget('carrinho');
-
-                DB::commit();
-
-                return redirect()->route('comprador.meus-pedidos')->with('success', 'Pedido realizado com sucesso! Pagamento confirmado.');
+            if ($resultadoPagamento['status'] === 'sucesso') {
+                return redirect()->route('carrinho.qrcode', ['pedido' => $pedido->id]);
             } else {
-                DB::rollBack();
-                return redirect()->route('comprador.carrinho')->with('error', 'Erro ao processar o pagamento.');
+                // Se o pagamento falhar, desfaz a reserva das rifas
+                Rifa::whereIn('id', array_keys($carrinho))->update([
+                    'id_comprador' => null,
+                    'status' => 'disponivel',
+                    'pedido_id' => null,
+                ]);
+                return redirect()->route('comprador.carrinho')->with('error', $resultadoPagamento['mensagem']);
             }
+
+
+            // if ($resultadoPagamento['status'] == 'sucesso') {
+            //     // Atualiza o status do pedido e o valor pago
+            //     $pedido->update([
+            //         'status' => 'pago',
+            //         'valor_pago' => $resultadoPagamento['valor_pago'], // Valor pago recebido da API
+            //     ]);
+
+            //     // Limpa o carrinho após a compra
+            //     Session::forget('carrinho');
+
+            //     DB::commit();
+
+            //     return redirect()->route('comprador.meus-pedidos')->with('success', 'Pedido realizado com sucesso! Pagamento confirmado.');
+            // } else {
+            //     DB::rollBack();
+            //     return redirect()->route('comprador.carrinho')->with('error', 'Erro ao processar o pagamento.');
+            // }
+
+
+
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Erro ao finalizar compra: ' . $e->getMessage());
@@ -165,56 +191,114 @@ class CheckoutController extends Controller
         return number_format($total, 2, '.', '');
     }
 
-    // EXEMPLO INTEGRAÇÃO CHECKOUT PAYPAL
-    public function processarPagamento(Pedido $pedido, Request $request)
+    public function processarPagamento(Pedido $pedido, $cpf, $telefone)
     {
-        // $valorTotal = $pedido->valor_a_pagar;
+        $apiToken = config('services.fastsoft.api_token');
+        $apiUrl = config('services.fastsoft.api_url');
 
-        // try {
-        //     // Exemplo com PayPal
-        //     $paypal = new \PayPal\Rest\ApiContext(
-        //         new \PayPal\Auth\OAuthTokenCredential(
-        //             'YOUR_CLIENT_ID',
-        //             'YOUR_SECRET_KEY'
-        //         )
-        //     );
+        // Recarrega as relações do pedido para evitar valores nulos
+        $pedido->load(['user', 'rifas']);
 
-        //     // Criar o pagamento
-        //     $payment = new \PayPal\Api\Payment();
-        //     $payment->setIntent('sale')
-        //         ->setPayer(new \PayPal\Api\Payer(['payment_method' => 'credit_card']))
-        //         ->setTransactions([new \PayPal\Api\Transaction([
-        //             'amount' => new \PayPal\Api\Amount(['total' => $valorTotal, 'currency' => 'BRL']),
-        //             'description' => 'Compra de Rifa'
-        //         ])]);
+        // Valida se o pedido tem um usuário associado
+        if (!$pedido->user) {
+            return [
+                'status' => 'erro',
+                'mensagem' => 'Pedido sem usuário associado.',
+            ];
+        }
 
-        //     // Executa o pagamento
-        //     $payment->create($paypal);
+        $valorTotal = $pedido->calcularValorTotal() * 100;
 
-        //     // Verifica o status
-        //     if ($payment->getState() == 'approved') {
-        //         return [
-        //             'status' => 'sucesso',
-        //             'valor_pago' => $valorTotal, // Valor pago via PayPal
-        //         ];
-        //     }
-
-        //     return [
-        //         'status' => 'erro',
-        //         'mensagem' => 'Pagamento não aprovado pelo PayPal.',
-        //     ];
-        // } catch (\Exception $e) {
-        //     Log::error('Erro no processamento do pagamento com PayPal: ' . $e->getMessage());
-        //     return [
-        //         'status' => 'erro',
-        //         'mensagem' => 'Erro no processamento do pagamento.',
-        //     ];
-        // }
-
-        //APAGAR
-        return [
-            'status' => 'sucesso',
-            'valor_pago' => '1000', // Valor pago via PayPal
+        $dadosPagamento = [
+            "amount" => $valorTotal,
+            "paymentMethod" => "PIX",
+            "customer" => [
+                "name" => $pedido->user->name,
+                "email" => $pedido->user->email,
+                "document" => [
+                    "number" => preg_replace('/\D/', '', $cpf),
+                    "type" => "CPF"
+                ],
+                "phone" => preg_replace('/\D/', '', $telefone),
+                "externaRef" => (string) $pedido->id
+            ],
+            "shipping" => [
+                "fee" => 100,
+                "address" => [
+                    "street" => "Avenida Paulista",
+                    "streetNumber" => "1000",
+                    "complement" => "Apartamento 101",
+                    "zipCode" => "01310-000",
+                    "neighborhood" => "Bela Vista",
+                    "city" => "São Paulo",
+                    "state" => "SP",
+                    "country" => "BR"
+                ]
+            ],
+            "items" => [
+                [
+                    "title" => "Venda de infoprodutos",
+                    "unitPrice" => $pedido->campanha->valor_cota * 100,
+                    "quantity" => $pedido->rifas()->where('id_comprador', $pedido->user->id)->count(),
+                    "tangible" => false,
+                    "externalRef" => (string) $pedido->id
+                ]
+            ],
+            "pix" => [
+                "expiresInDays" => 1
+            ],
+            "postbackUrl" => "https://webhook.site/efd8a996-67fc-4947-82df-1e2cbec74f91",
+            "metadata" => "{postback:https://webhook.site/ac9cbb8f-3dec-445a-bdff-3bc7f98ccf29}",
+            "traceable" => false
         ];
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => $apiToken,
+                'Content-Type' => 'application/json'
+            ])->post($apiUrl, $dadosPagamento);
+
+            if ($response->successful()) {
+                $dadosResposta = $response->json();
+
+                if (isset($dadosResposta['data']['pix']['qrcode'])) {
+                    $qrcodeUrl = $dadosResposta['data']['pix']['qrcode'];
+
+                    $pedido->update([
+                        'qrcode_url' => $qrcodeUrl,
+                    ]);
+
+                    return [
+                        'status' => 'sucesso',
+                        'qrcode_url' => $qrcodeUrl,
+                    ];
+                } else {
+                    return [
+                        'status' => 'erro',
+                        'mensagem' => 'QR Code não disponível na resposta da API.',
+                    ];
+                }
+            } else {
+                return [
+                    'status' => 'erro',
+                    'mensagem' => 'Erro na comunicação com a API de pagamento.',
+                    'detalhes' => $response->json(),
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::error('Erro no processamento do pagamento: ' . $e->getMessage());
+            return [
+                'status' => 'erro',
+                'mensagem' => 'Erro interno ao processar o pagamento.',
+            ];
+        }
+    }
+
+    public function exibirQrCode(Pedido $pedido)
+    {
+        if (!$pedido->qrcode_url) {
+            return redirect()->route('comprador.carrinho')->with('error', 'QR Code não disponível para este pedido.');
+        }
+        return view('carrinho.qrcode', compact('pedido'));
     }
 }

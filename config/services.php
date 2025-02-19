@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    // API checkout Fastsoft
+    'fastsoft' => [
+        'api_token' => env('FASTSOFT_API_TOKEN'),
+        'api_url' => 'https://api.fastsoftbrasil.com/api/user/transactions',
+    ],
 ];

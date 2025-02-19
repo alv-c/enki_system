@@ -28,8 +28,13 @@ Route::middleware(['auth', 'verified', 'comprador'])->prefix('comprador')->group
     Route::get('/carrinho', [CheckoutController::class, 'index'])->name('comprador.carrinho');
     Route::post('/carrinho/adicionar/{rifa}', [CheckoutController::class, 'adicionarAoCarrinho'])->name('comprador.carrinho.adicionar');
     Route::delete('/carrinho/remover/{id}', [CheckoutController::class, 'removerDoCarrinho'])->name('comprador.carrinho.remover');
+
     Route::post('/carrinho/adicionar-multiplas', [CheckoutController::class, 'adicionarMultiplasAoCarrinho'])
         ->name('comprador.carrinho.adicionar.multiplas');
+
+    Route::get('/carrinho/qrcode/{pedido}', [CheckoutController::class, 'exibirQrCode'])
+        ->name('carrinho.qrcode');
+
     Route::post('/checkout', [CheckoutController::class, 'finalizarCompra'])->name('comprador.checkout.processar');
 
     // Pedidos
