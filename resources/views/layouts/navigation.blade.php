@@ -4,7 +4,8 @@
             <!-- Logo -->
             <div class="flex items-center">
                 <a href="{{ route('dashboard') }}">
-                    <img src="{{ asset('images/logo.png') }}" alt="Logo" style="width: 100%; max-width: 80px; objet-fit: cover;">
+                    <img src="{{ asset('images/logo.png') }}" alt="Logo"
+                        style="width: 100%; max-width: 40px; object-fit: cover;">
                 </a>
             </div>
 

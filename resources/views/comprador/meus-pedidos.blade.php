@@ -1,24 +1,29 @@
 <x-app-layout>
     <div class="py-6 max-w-7xl mx-auto">
-        <h2 class="text-xl font-bold mb-4">📜 Meus Pedidos</h2>
+        <h2 class="text-xl font-bold mb-4">Meus Pedidos</h2>
 
         @if ($pedidos->isEmpty())
             <p class="text-gray-600">Você ainda não realizou nenhuma compra de rifas.</p>
         @else
-            <div class="bg-white shadow-md rounded-lg p-4">
+            <div class="bg-white shadow-lg rounded-lg p-4">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                #ID</th>
+                                #ID
+                            </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Campanha</th>
+                                Campanha
+                            </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Números Comprados</th>
+                                Números Comprados
+                            </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status</th>
+                                Status
+                            </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Data</th>
+                                Data
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
