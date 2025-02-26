@@ -20,6 +20,7 @@ class RifaCompraController extends Controller
         $rifas = Rifa::where('id_campanha', $campanha->id)
             ->where('status', 'disponivel')
             ->get();
-        return view('comprador.rifas', compact('campanha', 'rifas'));
+        $galeria = $campanha->galeria ? json_decode($campanha->galeria, true) : [];
+        return view('comprador.rifas', compact('campanha', 'rifas', 'galeria'));
     }
 }

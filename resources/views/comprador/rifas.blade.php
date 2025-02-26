@@ -6,6 +6,22 @@
     </x-slot>
 
     <div class="py-6 max-w-7xl mx-auto">
+        {{-- Galeria da Campanha --}}
+        @if (!empty($galeria))
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-2">Galeria da Campanha</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    @foreach ($galeria as $imagem)
+                        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                            <img src="{{ asset('storage/' . $imagem) }}" alt="Imagem da campanha"
+                                style="width: 100%; max-width: 350px; object-fit: cover; border-radius: 20px;">
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        {{-- Botões de Adição em Massa --}}
         <div class="mb-4 flex gap-4">
             <form action="{{ route('comprador.carrinho.adicionar.multiplas') }}" method="POST">
                 @csrf
