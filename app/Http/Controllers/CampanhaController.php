@@ -76,16 +76,20 @@ class CampanhaController extends Controller
             'subtitulo' => 'nullable|string|max:255',
             'descricao' => 'nullable|string',
             'status' => 'required|in:ativo,inativo,finalizado,pendente',
-            'galeria.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'galeria.*' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'valor_cota' => 'required|numeric|min:0',
             'num_cotas_disponiveis' => 'required|integer|min:0',
         ]);
         if ($request->hasFile('galeria')) {
-            $validated['galeria'] = array_map(function ($image) {
-                return $image->store('galerias', 'public');
-            }, $request->file('galeria'));
+            $files = $request->file('galeria');
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+            $validated['galeria'] = array_map(fn($image) => $image->store('galerias', 'public'), $files);
+        } else {
+            $validated['galeria'] = [];
         }
-        $validated['galeria'] = json_encode($validated['galeria'] ?? []);
+        $validated['galeria'] = json_encode($validated['galeria']);
         $campanha->update($validated);
         return redirect()->route('campanhas.index')->with('success', 'Campanha atualizada com sucesso!');
     }
