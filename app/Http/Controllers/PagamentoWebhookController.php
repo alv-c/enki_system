@@ -18,30 +18,27 @@ class PagamentoWebhookController extends Controller
 {
     public function handle(Request $request)
     {
-        Log::info('Webhook recebido', $request->all()); // Log para depuração
+        Log::info('Webhook recebido', $request->all());
 
         $data = $request->validate([
             'transaction_id' => 'required|string',
             'status' => 'required|string',
-            'pedido_id' => 'required|integer|exists:pedidos,id',
+            'id' => 'required|integer',
+            'pix.qrcode' => 'required|string',
         ]);
 
-        // Busca o pedido no banco de dados
-        $pedido = Pedido::find($data['pedido_id']);
+        $pedido = Pedido::find($data['id']);
 
+        // Verifica se o pedido foi encontrado
         if (!$pedido) {
             return response()->json(['error' => 'Pedido não encontrado'], 404);
         }
 
-        if ($data['status'] === 'confirmed') {
-            $pedido->update([
-                'status' => 'pago',
-                'valor_pago' => $pedido->valor_a_pagar,
-            ]);
+        $pedido->update([
+            'qrcode_url' => $data['pix']['qrcode'],
+            'status' => 'pendente',
+        ]);
 
-            return response()->json(['message' => 'Status do pedido atualizado para pago'], 200);
-        }
-
-        return response()->json(['message' => 'Nenhuma alteração necessária'], 200);
+        return response()->json(['message' => 'Pedido atualizado com QR Code'], 200);
     }
 }

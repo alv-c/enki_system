@@ -1,40 +1,5 @@
 <x-app-layout>
-
-
-    <div class="py-6 max-w-7xl mx-auto">
-        <button type="button" class="btn btn-success w-100 bg-blue-500 text-white px-6 py-3 rounded" id="openModalButton">
-            Abrir Modal
-        </button>
-    </div>
-
-    <!-- Modal para CPF e Telefone -->
-    <div id="modal"
-        class="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center opacity-0 pointer-events-none transition-opacity duration-300 hidden">
-        <div class="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-semibold">Título do Modal</h3>
-                <button type="button" id="closeModalButton" class="text-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                        class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div class="mb-4">
-                <p>Este é o conteúdo do modal. Você pode adicionar mais informações ou formulários aqui.</p>
-            </div>
-            <div class="flex justify-end">
-                <button type="button" id="confirmButton" class="bg-green-500 text-white px-4 py-2 rounded mr-2">
-                    Confirmar
-                </button>
-                <button type="button" id="cancelButton" class="bg-red-500 text-white px-4 py-2 rounded">
-                    Cancelar
-                </button>
-            </div>
-        </div>
-    </div>
-    {{-- <div class="modal fade" id="modalDadosPagamento" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal fade" id="modalDadosPagamento" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -57,7 +22,7 @@
                 </div>
             </div>
         </div>
-    </div> --}}
+    </div>
 
     <div class="py-6 max-w-7xl mx-auto">
         @if (!empty($carrinho) && count($carrinho) > 0)

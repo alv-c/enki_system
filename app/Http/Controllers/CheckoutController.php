@@ -296,9 +296,38 @@ class CheckoutController extends Controller
 
     public function exibirQrCode(Pedido $pedido)
     {
-        if (!$pedido->qrcode_url) {
-            return redirect()->route('comprador.carrinho')->with('error', 'QR Code não disponível para este pedido.');
+        if (!$pedido->qrcode) {
+            return redirect()->route('comprador.carrinho')->with('error', 'QR Code ainda não disponível.');
         }
+
         return view('carrinho.qrcode', compact('pedido'));
     }
+
+    // public function webhookPagamento(Request $request)
+    // {
+    //     Log::info('Webhook recebido:', $request->all()); // Log para depuração
+
+    //     $data = $request->all();
+
+    //     // Verifica se o webhook traz um status de pagamento pendente e o link do QR Code
+    //     if (!empty($data['status']) && $data['status'] === 'pending' && !empty($data['qrcode'])) {
+    //         $pedido = Pedido::where('referencia', $data['pedido_id'])->first();
+
+    //         if ($pedido) {
+    //             // Atualiza o pedido com o link do QR Code
+    //             $pedido->qrcode = $data['qrcode'];
+    //             $pedido->status = 'aguardando_pagamento';
+    //             $pedido->save();
+
+    //             Log::info("Pedido atualizado com QR Code: {$pedido->id}");
+
+    //             // Redireciona para a página do QR Code
+    //             return redirect()->route('carrinho.qrcode', ['pedido' => $pedido->id]);
+    //         } else {
+    //             Log::warning("Pedido não encontrado para a referência: {$data['pedido_id']}");
+    //         }
+    //     }
+
+    //     return response()->json(['message' => 'Webhook processado'], 200);
+    // }
 }
